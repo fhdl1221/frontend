@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getMemo, updateState, deleteMemo } from "../utils/supabase";
+import { getMemos, updateMemo, deleteMemo } from '../utils/api';
 import SearchBar from "../components/SearchBar";
 import FilterButtons from "../components/FilterButtons";
 import OrderButtons from "../components/OrderButtons";
@@ -9,29 +9,51 @@ export default function MemoList() {
   const [todos, setTodos] = useState([]);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState("date");
+  const [sortKey, setSortKey] = useState("createdAt"); // 정렬 기준을 createdAt으로 변경
   const [sortOrder, setSortOrder] = useState("asc");
 
   useEffect(() => {
     async function fetchData() {
-      const data = await getMemo();
-      setTodos(data);
+        try {
+            const response = await getMemos();
+            setTodos(response.data);
+        } catch (error) {
+            console.error("Failed to fetch memos:", error);
+        }
     }
     fetchData();
   }, []);
 
   async function handleState(id, currentState) {
-    const newState = currentState === "completed" ? "incomplete" : "completed";
-    await updateState(id, newState);
+    const currentTodo = todos.find(todo => todo.id === id);
+    if (!currentTodo) return;
 
-    setTodos((prev) =>
-      prev.map((todo) => (todo.id === id ? { ...todo, state: newState } : todo))
-    );
+    const newState = currentState === "completed" ? "incomplete" : "completed";
+    // 백엔드로 보낼 데이터에는 title, state, priority가 모두 필요할 수 있습니다.
+    // 여기서는 state만 변경하지만, 전체 객체를 보내는 것이 안전할 수 있습니다.
+    const updatedTodoData = { 
+        title: currentTodo.title, 
+        priority: currentTodo.priority, 
+        state: newState 
+    };
+    
+    try {
+        const response = await updateMemo(id, updatedTodoData);
+        setTodos((prev) =>
+            prev.map((todo) => (todo.id === id ? response.data : todo))
+        );
+    } catch (error) {
+        console.error("Failed to update memo:", error);
+    }
   }
 
   async function handleDelete(id) {
-    await deleteMemo(id);
-    setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    try {
+        await deleteMemo(id);
+        setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    } catch (error) {
+        console.error("Failed to delete memo:", error);
+    }
   }
   const priorityMaps = { low: 1, normal: 2, high: 3 };
 
@@ -45,7 +67,7 @@ export default function MemoList() {
       let keyA = a[sortKey];
       let keyB = b[sortKey];
 
-      if (sortKey === "date") {
+      if (sortKey === "createdAt") { // 정렬 기준을 createdAt으로 변경
         keyA = new Date(keyA);
         keyB = new Date(keyB);
       }

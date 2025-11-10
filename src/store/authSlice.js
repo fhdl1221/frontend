@@ -1,109 +1,28 @@
-import axios from "axios";
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-const signup = createAsyncThunk(
-  "auth/signup",
-  async (data, { rejectWithValue }) => {
-    try {
-      const config = {
-        url: `${SUPABASE_URL}/auth/v1/signup`,
-        method: "POST",
-        headers: {
-          "Content-type": "application/json",
-          apikey: SUPABASE_ANON_KEY,
-        },
-        data: {
-          email: data.email,
-          password: data.password,
-        },
-      };
-      const response = await axios(config);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response.data);
-    }
-  }
-);
-
-const login = createAsyncThunk(
-  "auth/login",
-  async (data, { rejectWithValue }) => {
-    try {
-      const config = {
-        url: `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
-        method: "POST",
-        headers: {
-          "Content-type": "application/json",
-          apikey: SUPABASE_ANON_KEY,
-        },
-        data: {
-          email: data.email,
-          password: data.password,
-        },
-      };
-      const response = await axios(config);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response.data);
-    }
-  }
-);
-
-const logout = createAsyncThunk(
-  "auth/logout",
-  async (_, { rejectWithValue, getState }) => {
-    try {
-      const config = {
-        url: `${SUPABASE_URL}/auth/v1/logout`,
-        method: "POST",
-        headers: {
-          "Content-type": "application/json",
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${getState().auth.token}`,
-        },
-      };
-      const response = await axios(config);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response.data);
-    }
-  }
-);
-
-const initialState = {
-  error: null,
-  token: null,
-  isSignup: false,
-};
+import { createSlice } from '@reduxjs/toolkit';
 
 const authSlice = createSlice({
-  name: "auth",
-  initialState: initialState,
-  reducers: {
-    resetIsSignup: (state) => {
-      state.isSignup = false;
+    name: 'auth',
+    initialState: {
+        user: JSON.parse(localStorage.getItem('user')) || null,
+        token: localStorage.getItem('accessToken') || null,
     },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(signup.fulfilled, (state) => {
-        state.isSignup = true;
-      })
-      .addCase(signup.rejected, (state, action) => {
-        state.error = action.payload;
-      })
-      .addCase(login.fulfilled, (state, action) => {
-        state.token = action.payload["access_token"];
-      })
-      .addCase(logout.fulfilled, (state) => {
-        state.token = null;
-      });
-  },
+    reducers: {
+        setCredentials(state, action) {
+            const { user, token } = action.payload;
+            state.user = user;
+            state.token = token;
+            localStorage.setItem('accessToken', token);
+            localStorage.setItem('user', JSON.stringify(user));
+        },
+        logout(state) {
+            state.user = null;
+            state.token = null;
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('user');
+        },
+    },
 });
 
-export const { resetIsSignup } = authSlice.actions;
+export const { setCredentials, logout } = authSlice.actions;
 export default authSlice.reducer;
-export { signup, login, logout };
+

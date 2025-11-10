@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { postMemo } from "../utils/supabase";
+import { createMemo } from "../utils/api"; // Import createMemo from api.js
 
 export default function ChatMessage({ message }) {
   const isUser = message.role === "user";
@@ -24,16 +24,14 @@ export default function ChatMessage({ message }) {
     setSaving(true);
 
     try {
-      await postMemo({
+      await createMemo({ // postMemo 대신 createMemo 사용
         title: data.title,
-        date: data.date,
-        time: data.time || null,
+        state: "incomplete", // 백엔드 Memo 엔티티에 맞게 state 추가
         priority: data.priority,
-        category: data.category,
       });
       setSaved(true);
     } catch (error) {
-      console.log(error);
+      console.error("Failed to save memo:", error);
     }
 
     setSaving(false);

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import ChatForm from "../components/ChatForm";
 import MessageList from "../components/MessageList";
-
+import { createMemo } from '../utils/api'; // Import createMemo from api.js
 import { chat, config } from "../utils/genai";
+
 export default function Chat() {
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState([]);
@@ -12,13 +13,25 @@ export default function Chat() {
     e.preventDefault();
     if (prompt.trim() === "" || isLoading === true) return;
 
-    setMessages((prev) => [...prev, { role: "user", content: prompt }]);
-
-    const currentPrompt = prompt;
+    const userMessage = prompt;
+    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setPrompt("");
 
+    // Save the user message to the database as a memo via the new API
+    try {
+      const newMemo = {
+        title: userMessage,
+        state: "incomplete",
+        priority: "normal",
+      };
+      await createMemo(newMemo);
+    } catch (error) {
+      console.error("Failed to save memo:", error);
+      // Optionally, inform the user that saving failed
+    }
+
     setIsLoading(true);
-    generateAiContent(currentPrompt);
+    await generateAiContent(userMessage);
     setIsLoading(false);
   }
 
