@@ -17,19 +17,6 @@ export default function Chat() {
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setPrompt("");
 
-    // Save the user message to the database as a memo via the new API
-    try {
-      const newMemo = {
-        title: userMessage,
-        state: "incomplete",
-        priority: "normal",
-      };
-      await createMemo(newMemo);
-    } catch (error) {
-      console.error("Failed to save memo:", error);
-      // Optionally, inform the user that saving failed
-    }
-
     setIsLoading(true);
     await generateAiContent(userMessage);
     setIsLoading(false);

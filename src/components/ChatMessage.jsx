@@ -24,10 +24,15 @@ export default function ChatMessage({ message }) {
     setSaving(true);
 
     try {
-      await createMemo({ // postMemo 대신 createMemo 사용
+      // AI가 생성한 date와 time을 조합하여 dueDate 생성
+      const dueDate = (data.date && data.time) ? `${data.date}T${data.time}:00` : null;
+
+      await createMemo({
         title: data.title,
-        state: "incomplete", // 백엔드 Memo 엔티티에 맞게 state 추가
-        priority: data.priority,
+        state: "incomplete",
+        priority: data.priority, // AI가 분석한 priority 사용
+        category: data.category, // 카테고리 추가
+        dueDate: dueDate, // dueDate 추가
       });
       setSaved(true);
     } catch (error) {
