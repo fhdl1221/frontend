@@ -1,28 +1,29 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+const initialState = {
+  user: null,
+  token: null,
+};
+
 const authSlice = createSlice({
-    name: 'auth',
-    initialState: {
-        user: JSON.parse(localStorage.getItem('user')) || null,
-        token: localStorage.getItem('accessToken') || null,
+  name: 'auth',
+  initialState,
+  reducers: {
+    setCredentials: (state, action) => {
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      // redux-persist가 자동으로 localStorage에 저장하므로
+      // 수동으로 localStorage에 저장할 필요 없음
+      // 하지만 accessToken은 따로 저장 (API 호출용)
+      localStorage.setItem('accessToken', action.payload.token);
     },
-    reducers: {
-        setCredentials(state, action) {
-            const { user, token } = action.payload;
-            state.user = user;
-            state.token = token;
-            localStorage.setItem('accessToken', token);
-            localStorage.setItem('user', JSON.stringify(user));
-        },
-        logout(state) {
-            state.user = null;
-            state.token = null;
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('user');
-        },
+    logout: (state) => {
+      state.user = null;
+      state.token = null;
+      localStorage.removeItem('accessToken');
     },
+  },
 });
 
 export const { setCredentials, logout } = authSlice.actions;
 export default authSlice.reducer;
-

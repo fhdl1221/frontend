@@ -1,3 +1,4 @@
+import React from "react";
 export default function FilterButtons({ filter, setFilter }) {
   const buttons = [
     { label: "전체", value: "all" },

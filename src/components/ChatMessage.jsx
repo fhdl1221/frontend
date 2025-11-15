@@ -1,97 +1,51 @@
-import React, { useState } from "react";
-import { createMemo } from "../utils/api"; // Import createMemo from api.js
-
+import React from "react";
 export default function ChatMessage({ message }) {
-  const isUser = message.role === "user";
-  const isAi = message.role === "ai";
-
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  let data = null;
-
-  // JSON 메시지 파싱
-  if (isAi) {
-    try {
-      data = JSON.parse(message.content);
-    } catch {
-      data = null;
-    }
-  }
-
-  async function handleSave() {
-    if (!data || !data.isMemo) return;
-    setSaving(true);
-
-    try {
-      // AI가 생성한 date와 time을 조합하여 dueDate 생성
-      const dueDate = (data.date && data.time) ? `${data.date}T${data.time}:00` : null;
-
-      await createMemo({
-        title: data.title,
-        state: "incomplete",
-        priority: data.priority, // AI가 분석한 priority 사용
-        category: data.category, // 카테고리 추가
-        dueDate: dueDate, // dueDate 추가
-      });
-      setSaved(true);
-    } catch (error) {
-      console.error("Failed to save memo:", error);
-    }
-
-    setSaving(false);
-  }
+  const isAI = message.sender === "AI";
 
   return (
-    <div className="flex justify-center">
-      <div
-        className={`mt-4 w-[60%] flex ${
-          isUser ? "justify-end" : "justify-start"
-        }`}
-      >
-        {isUser ? (
-          <div className="px-4 py-3 bg-blue-500 text-white rounded-2xl rounded-br-none shadow-md max-w-[80%]">
-            {message.content}
-          </div>
-        ) : data ? (
-          data.isMemo ? (
-            <div className="p-5 bg-gray-200 rounded-2xl rounded-bl-none shadow-md max-w-[90%]">
-              <h3 className="font-semibold text-gray-800 mb-2">
-                📝 {data.title || "제목 없음"}
-              </h3>
-              <div className="text-md text-gray-800 space-y-2">
-                <p>
-                  <strong>📅 마감일 :</strong> {data.date || "마감 기한 없음"}
-                </p>
-                <p>
-                  <strong>⭐ 우선순위 :</strong> {data.priority}
-                </p>
-                <p>
-                  <strong>📂 카테고리 :</strong> {data.category || "미지정"}
-                </p>
-              </div>
-              <button
-                onClick={handleSave}
-                disabled={saved || saving}
-                className={`mt-3 text-sm px-3 py-2 rounded-lg transition ${
-                  saved
-                    ? "bg-yellow-500 text-white cursor-default"
-                    : saving
-                    ? "bg-gray-500 text-white cursor-wait"
-                    : "bg-blue-500 hover:bg-blue-600 text-white"
-                }`}
-              >
-                {saved ? "저장됨" : saving ? "저장중.." : "등록"}
-              </button>
-            </div>
-          ) : (
-            <div className="p-3 bg-gray-200 text-gray-900 rounded-2xl rounded-bl-none shadow-md max-w-[80%]">
-              할 일과 관련이 없습니다
-            </div>
-          )
-        ) : (
-          <div className="p-3 bg-red-100 text-red-800 rounded-2xl rounded-bl-none shadow-md max-w-[80%]">
-            JSON 파싱 실패: {message.content}
+    <div className={`flex items-start gap-3 ${isAI ? "" : "flex-row-reverse"}`}>
+      {/* 아바타 */}
+      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white ${
+        isAI
+          ? "bg-gradient-to-br from-indigo-500 to-purple-600"
+          : "bg-gradient-to-br from-green-500 to-emerald-600"
+      }`}>
+        {isAI ? "🤖" : "👤"}
+      </div>
+
+      {/* 메시지 버블 */}
+      <div className={`max-w-[70%] ${isAI ? "" : "text-right"}`}>
+        <div className={`inline-block px-4 py-3 rounded-2xl shadow-md ${
+          isAI
+            ? "bg-white text-gray-800"
+            : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+        } ${isAI ? "rounded-tl-none" : "rounded-tr-none"}`}>
+          <p className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">
+            {message.message}
+          </p>
+        </div>
+        
+        {/* 타임스탬프 */}
+        <div className={`text-xs text-gray-500 mt-1 px-2 ${isAI ? "text-left" : "text-right"}`}>
+          {new Date(message.timestamp).toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </div>
+
+        {/* 감정/원인 태그 (AI 메시지에만) */}
+        {isAI && (message.emotion || message.stressCause) && (
+          <div className="flex gap-2 mt-2">
+            {message.emotion && (
+              <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">
+                {message.emotion}
+              </span>
+            )}
+            {message.stressCause && (
+              <span className="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-medium">
+                {message.stressCause}
+              </span>
+            )}
           </div>
         )}
       </div>

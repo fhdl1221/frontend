@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import ChatForm from "../components/ChatForm";
 import MessageList from "../components/MessageList";

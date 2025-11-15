@@ -1,3 +1,4 @@
+import React from "react";
 import { useState, useEffect } from "react";
 import { getMemos, updateMemo, deleteMemo } from '../utils/api';
 import SearchBar from "../components/SearchBar";
@@ -88,12 +89,12 @@ export default function MemoList() {
     .filter((todo) => todo.title.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="p-4 w-[60%] mx-auto">
-      <div className="flex items-center justify-between mt-4 mb-4">
-        <h1 className="text-2xl font-bold">My Memo</h1>
+    <div className="p-4 w-full md:w-[60%] mx-auto">
+      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 mb-4">
+        <h1 className="text-2xl font-bold mb-4 sm:mb-0">My Memo</h1>
         <SearchBar search={search} setSearch={setSearch}></SearchBar>
       </div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-4">
         <FilterButtons filter={filter} setFilter={setFilter} />
         <OrderButtons
           sortKey={sortKey}

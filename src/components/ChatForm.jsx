@@ -1,3 +1,4 @@
+import React from "react";
 export default function ChatForm({ prompt, setPrompt, onSubmit, isLoading }) {
   return (
     <form onSubmit={onSubmit} className="flex-shrink-0 flex gap-3 p-4 justify-center">
@@ -9,7 +10,7 @@ export default function ChatForm({ prompt, setPrompt, onSubmit, isLoading }) {
           isLoading ? "답변을 생성하고 있습니다..." : "메시지를 입력하세요..."
         }
         disabled={isLoading}
-        className="w-[60%] px-4 py-3 bg-gray-200 rounded-2xl"
+        className="w-full md:w-[60%] px-4 py-3 bg-gray-200 rounded-2xl"
       />
       <input
         type="submit"

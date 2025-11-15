@@ -1,35 +1,24 @@
-import { configureStore } from "@reduxjs/toolkit";
-import { persistStore, persistReducer } from "redux-persist";
-import storage from "redux-persist/lib/storage";
-import authReducer from "./authSlice";
+import { configureStore } from '@reduxjs/toolkit';
+import { persistStore, persistReducer } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
+import authReducer from './authSlice';
 
-// Redux Persist 모듈 불러오기
-import {
-  FLUSH,
-  REHYDRATE,
-  PAUSE,
-  PERSIST,
-  PURGE,
-  REGISTER,
-} from "redux-persist";
-
-const authPersistConfig = {
-  key: "auth",
-  storage: storage,
-  whitelist: ["token"],
+const persistConfig = {
+  key: 'root',
+  storage,
+  whitelist: ['auth'], // auth만 persist
 };
 
-const persistAuthReducer = persistReducer(authPersistConfig, authReducer);
+const persistedReducer = persistReducer(persistConfig, authReducer);
 
 export const store = configureStore({
   reducer: {
-    auth: persistAuthReducer,
+    auth: persistedReducer,
   },
-  // middleware 속성 추가
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
     }),
 });
