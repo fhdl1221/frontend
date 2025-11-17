@@ -1,34 +1,56 @@
 import React from "react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+// 1. Redux 훅 import
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "../store/authSlice"; // authSlice 경로에 맞게 수정하세요
+
 import ChatMessage from "../components/ChatMessage";
 import ContentCard from "../components/ContentCard";
+
+// [변경] fetch 대신 api.js의 함수를 import
+import { sendChatMessage } from "../utils/api";
 
 export default function ChatBotPage() {
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
-  
+
+  // 2. Redux에서 토큰과 dispatch 함수 가져오기
+  const dispatch = useDispatch();
+  const token = useSelector((state) => state.auth.token); // Redux 스토어의 토큰 경로
+
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: "AI",
-      message: "안녕하세요! 👋 SoftDay 어시스턴트입니다. 오늘은 어떤 기분이신가요?",
+      message:
+        "안녕하세요! 👋 SoftDay 어시스턴트입니다. 오늘은 어떤 기분이신가요?",
       timestamp: new Date().toISOString(),
     },
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [recommendedContents, setRecommendedContents] = useState([]);
-  const [conversationId, setConversationId] = useState(null);
+  const [conversationId, setConversationId] = useState(null); // 백엔드와 연동
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    const storedToken = localStorage.getItem("accessToken");
+    if (!storedToken && !token) {
+      // 둘 다 없으면 확실히 로그아웃 상태
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+    }
+  }, [token, navigate]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // 4. handleSendMessage 함수를 실제 API 호출로 수정
   async function handleSendMessage(e) {
     e.preventDefault();
 
@@ -44,50 +66,60 @@ export default function ChatBotPage() {
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
     setIsLoading(true);
+    setRecommendedContents([]); // 새 메시지 전송 시 이전 추천 콘텐츠 숨김
 
-    // TODO: POST /chat/message API 호출
+    // 백엔드 ChatRequest DTO와 동일한 형식
     const requestData = {
-      conversationId,
+      conversationId: conversationId, // null이거나, 이전 대화 ID
       message: inputMessage,
     };
 
     console.log("챗봇 요청:", requestData);
 
-    // Mock AI 응답
-    setTimeout(() => {
+    // --- Mock API 제거 ---
+    // setTimeout(() => { ... }, 1500);
+
+    // 5. 실제 API 호출 (try-catch-finally)
+    try {
+      // [변경] fetch 대신 api.js의 sendChatMessage 사용
+      // (토큰은 api.js의 인터셉터가 자동으로 헤더에 추가해줍니다)
+      const response = await sendChatMessage(requestData);
+
+      // [변경] axios 응답은 response.data에 담겨 있습니다.
+      const data = response.data;
+
+      if (!data) {
+        throw new Error("API 응답에 데이터가 없습니다.");
+      }
+
+      // ChatResponse DTO를 프론트엔드 state 형식으로 변환
       const aiMessage = {
         id: Date.now() + 1,
         sender: "AI",
-        message: "그 마음 충분히 이해합니다. 스트레스를 받고 계시는군요. 즉시 도움이 될 수 있는 몇 가지를 추천해드릴게요:\n\n1. 🧘 5분 명상\n2. 🌬️ 박스 호흡법\n3. 🚶 짧은 산책\n\n어떤 것이 좋을까요?",
-        timestamp: new Date().toISOString(),
-        emotion: "stressed",
-        stressCause: "업무 과다",
+        message: data.message,
+        timestamp: data.timestamp, // 백엔드 타임스탬프
+        emotion: data.emotion,
+        stressCause: data.stressCause,
       };
 
-      const mockContents = [
-        {
-          id: 1,
-          title: "5분 명상으로 마음 챙기기",
-          description: "바쁜 일상 속 짧은 휴식",
-          contentType: "VIDEO",
-          duration: "5분",
-          thumbnailUrl: "🧘",
-        },
-        {
-          id: 2,
-          title: "박스 호흡법 가이드",
-          description: "즉각적인 스트레스 완화",
-          contentType: "AUDIO",
-          duration: "8분",
-          thumbnailUrl: "🌬️",
-        },
-      ];
-
       setMessages((prev) => [...prev, aiMessage]);
-      setRecommendedContents(mockContents);
-      setConversationId(conversationId || "conv_" + Date.now());
-      setIsLoading(false);
-    }, 1500);
+      setConversationId(data.conversationId); // [중요] 백엔드에서 받은 대화 ID로 업데이트
+      setRecommendedContents(data.recommendedContents || []);
+    } catch (error) {
+      console.error("채팅 메시지 전송 실패:", error);
+
+      // 사용자에게 에러 메시지 표시
+      const errorMessage = {
+        id: Date.now() + 1,
+        sender: "AI",
+        message: `죄송합니다, 응답을 가져오는 중 오류가 발생했습니다.\n(${error.message})`,
+        timestamp: new Date().toISOString(),
+        emotion: "error",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false); // 7. 성공/실패 여부와 관계없이 로딩 종료
+    }
   }
 
   function handleQuickReply(text) {
@@ -116,15 +148,17 @@ export default function ChatBotPage() {
               </button>
               <div>
                 <h1 className="text-xl font-bold">SoftDay 어시스턴트 🤖</h1>
-                <p className="text-sm text-purple-100">당신의 개인 스트레스 관리 동반자</p>
+                <p className="text-sm text-purple-100">
+                  당신의 개인 스트레스 관리 동반자
+                </p>
               </div>
             </div>
             <button
               onClick={() => {
                 if (confirm("대화를 초기화하시겠습니까?")) {
-                  setMessages([messages[0]]);
+                  setMessages([messages[0]]); // 첫 번째 AI 인사 메시지만 남김
                   setRecommendedContents([]);
-                  setConversationId(null);
+                  setConversationId(null); // 8. 대화 ID 초기화
                 }
               }}
               className="text-sm bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all"
@@ -140,6 +174,7 @@ export default function ChatBotPage() {
             <ChatMessage key={msg.id} message={msg} />
           ))}
 
+          {/* 로딩 인디케이터 (변경 없음) */}
           {isLoading && (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white">
@@ -147,15 +182,24 @@ export default function ChatBotPage() {
               </div>
               <div className="bg-white rounded-2xl px-4 py-3 shadow-md">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                  <span
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  ></span>
+                  <span
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  ></span>
+                  <span
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  ></span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* 추천 콘텐츠 */}
+          {/* 추천 콘텐츠 (변경 없음) */}
           {recommendedContents.length > 0 && (
             <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-100">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -173,7 +217,7 @@ export default function ChatBotPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 빠른 답장 버튼 */}
+        {/* 빠른 답장 버튼 (변경 없음) */}
         {messages.length <= 2 && !isLoading && (
           <div className="px-4 sm:px-6 pb-2">
             <div className="flex flex-wrap gap-2">
@@ -190,8 +234,11 @@ export default function ChatBotPage() {
           </div>
         )}
 
-        {/* 입력 영역 */}
-        <form onSubmit={handleSendMessage} className="bg-white border-t border-gray-200 px-4 sm:px-6 py-4">
+        {/* 입력 영역 (변경 없음) */}
+        <form
+          onSubmit={handleSendMessage}
+          className="bg-white border-t border-gray-200 px-4 sm:px-6 py-4"
+        >
           <div className="flex items-center gap-3">
             <input
               type="text"

@@ -3,12 +3,13 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { setCredentials } from "../store/authSlice";
+import { login } from "../utils/api";
 
 export default function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,22 +21,41 @@ export default function Login() {
 
     try {
       // TODO: POST /auth/login API 호출
-      // const response = await login({ username, password });
-      // const { accessToken, user } = response.data;
-      
+      const response = await login({ email, password });
+      const { accessToken } = response.data;
+
       // Mock 로그인
-      setTimeout(() => {
-        const mockToken = "mock_jwt_token_" + Date.now();
-        const mockUser = { username };
-        
-        dispatch(setCredentials({ user: mockUser, token: mockToken }));
-        setIsLoading(false);
-        navigate("/");
-      }, 1000);
-      
+      // setTimeout(() => {
+      //   const mockToken = "mock_jwt_token_" + Date.now();
+      //   const mockUser = { username };
+
+      //   dispatch(setCredentials({ user: mockUser, token: mockToken }));
+      //   setIsLoading(false);
+      //   navigate("/");
+      // }, 1000);
+
+      // 3. [중요] 토큰을 localStorage에 저장 (apiClient 인터셉터가 사용)
+      localStorage.setItem("accessToken", accessToken);
+
+      // 4. Redux 스토어 및 localStorage에도 사용자 정보 저장
+      const user = { email }; // 백엔드는 토큰만 반환하므로 email 저장
+      //localStorage.setItem("user", JSON.stringify(user));
+
+      dispatch(setCredentials({ user: { email }, token: accessToken }));
+
+      setIsLoading(false);
+      navigate("/");
     } catch (err) {
       console.error("Login failed:", err);
-      setError("로그인에 실패했습니다. 사용자 이름 또는 비밀번호를 확인하세요.");
+      // 백엔드에서 401 (Unauthorized) 응답을 보낼 경우
+      if (
+        err.response &&
+        (err.response.status === 401 || err.response.status === 400)
+      ) {
+        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+      } else {
+        setError("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      }
       setIsLoading(false);
     }
   };
@@ -53,22 +73,28 @@ export default function Login() {
         {/* 로그인 폼 */}
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-2">
-              사용자 이름
+            <label
+              htmlFor="email"
+              className="block text-sm font-semibold text-gray-700 mb-2"
+            >
+              이메일
             </label>
             <input
-              type="text"
-              id="username"
-              value={username}
-              placeholder="your-username"
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              id="email"
+              value={email}
+              placeholder="email@example.com"
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-semibold text-gray-700 mb-2"
+            >
               비밀번호
             </label>
             <input

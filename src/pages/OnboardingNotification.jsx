@@ -8,6 +8,8 @@ export default function OnboardingNotification() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
+
+  // location.state에 email, password, industry, careerYears, surveyAnswers, preferences가 모두 누적됩니다.
   const userData = location.state || {};
 
   const [showModal, setShowModal] = useState(false);
@@ -18,27 +20,36 @@ export default function OnboardingNotification() {
     setIsLoading(true);
 
     try {
-      // 회원가입 API 호출
-      const response = await signup({
-        email: userData.email,
-        password: userData.password,
-        name: userData.name,
-        position: userData.position,
-        department: userData.department,
-        role: userData.role,
-        surveyAnswers: userData.surveyAnswers,
-        preferences: userData.preferences,
-        allowNotification,
-      });
+      // 1. [수정] 백엔드 SignUpRequest DTO와 일치하는 데이터 객체 생성
+      const signupData = {
+        email: userData.email, // from SignupStep1
+        password: userData.password, // from SignupStep1
+        industry: userData.industry, // from OnboardingProfile
+        careerYears: userData.careerYears, // from OnboardingProfile
+        surveyAnswers: userData.surveyAnswers, // from OnboardingSurvey
+        preferences: userData.preferences, // from OnboardingPreferences
+        allowNotification: allowNotification, // from this page
+      };
 
+      // 2. [수정] 위에서 만든 signupData 객체로 API 호출
+      const response = await signup(signupData);
+
+      // 3. 백엔드가 토큰을 반환합니다. (AuthController 수정됨)
       const { accessToken } = response.data;
-      dispatch(setCredentials({ user: { email: userData.email }, token: accessToken }));
-      
+
+      // 4. 회원가입과 동시에 로그인 처리
+      dispatch(
+        setCredentials({ user: { email: userData.email }, token: accessToken })
+      );
+
       setIsLoading(false);
-      navigate("/");
+      navigate("/"); // 홈으로 이동
     } catch (error) {
       console.error("Signup failed:", error);
-      alert("회원가입에 실패했습니다");
+      // 5. [수정] 에러 메시지 개선
+      alert(
+        "회원가입에 실패했습니다: " + (error.response?.data || "서버 오류")
+      );
       setIsLoading(false);
     }
   };

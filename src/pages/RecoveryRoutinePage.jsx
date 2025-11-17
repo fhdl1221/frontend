@@ -2,13 +2,15 @@ import React from "react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import RoutineCard from "../components/RoutineCard";
+import { getWeeklyAnalytics } from "../utils/api";
 
 export default function RecoveryRoutinePage() {
   const navigate = useNavigate();
-  
+
   const [weeklyAnalysis, setWeeklyAnalysis] = useState(null);
   const [routines, setRoutines] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [aiMessage, setAiMessage] = useState("");
 
   useEffect(() => {
     fetchWeeklyData();
@@ -18,70 +20,33 @@ export default function RecoveryRoutinePage() {
     setLoading(true);
     // TODO: GET /analytics/weekly API 호출
     // TODO: GET /routines API 호출
-    
-    setTimeout(() => {
-      const mockAnalysis = {
-        averageStress: 3.5,
-        peakTime: "오후 3시 ~ 5시",
-        mainCause: "업무 과다 (60%)",
-        checkInRate: 85,
-      };
 
-      const mockRoutines = [
-        {
-          id: 1,
-          icon: "🌅",
-          title: "아침 명상",
-          scheduledTime: "08:00",
-          duration: "10분",
-          frequency: "매일",
-          isActive: true,
-          completionRate: 85,
-          streak: 12,
-          description: "하루를 시작하는 평온한 마음챙김",
-        },
-        {
-          id: 2,
-          icon: "🚶",
-          title: "오후 산책",
-          scheduledTime: "15:00",
-          duration: "15분",
-          frequency: "평일",
-          isActive: true,
-          completionRate: 72,
-          streak: 8,
-          description: "업무 스트레스를 줄이는 가벼운 운동",
-        },
-        {
-          id: 3,
-          icon: "🧘",
-          title: "저녁 요가",
-          scheduledTime: "18:00",
-          duration: "20분",
-          frequency: "매일",
-          isActive: false,
-          completionRate: 45,
-          streak: 0,
-          description: "하루의 긴장을 풀어주는 스트레칭",
-        },
-        {
-          id: 4,
-          icon: "🌬️",
-          title: "호흡 운동",
-          scheduledTime: "14:00",
-          duration: "5분",
-          frequency: "평일",
-          isActive: true,
-          completionRate: 90,
-          streak: 15,
-          description: "스트레스 피크 시간 전 짧은 휴식",
-        },
-      ];
+    try {
+      const response = await getWeeklyAnalytics();
+      const data = response.data;
 
-      setWeeklyAnalysis(mockAnalysis);
-      setRoutines(mockRoutines);
+      setWeeklyAnalysis({
+        averageStress: data.averageStress,
+        peakTime: data.peakTime,
+        mainCause: data.mainCause,
+        checkInRate: data.checkInRate,
+      });
+
+      setAiMessage(data.analysisBasis);
+      setRoutines(data.recommendedRoutines);
+    } catch (error) {
+      console.error("주간 분석 데이터 로드 실패:", error);
+      // 에러 발생 시 Mock 데이터와 유사한 기본값 설정
+      setWeeklyAnalysis({
+        averageStress: 0,
+        peakTime: "N/A",
+        mainCause: "오류 발생",
+        checkInRate: 0,
+      });
+      setAiMessage("데이터를 불러오는 데 실패했습니다.");
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   }
 
   async function handleToggleRoutine(routineId, currentState) {
@@ -123,6 +88,14 @@ export default function RecoveryRoutinePage() {
     );
   }
 
+  if (!weeklyAnalysis) {
+    return (
+      <main className="flex-grow w-full bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-600">데이터를 불러오지 못했습니다.</p>
+      </main>
+    );
+  }
+
   return (
     <main className="flex-grow w-full bg-gray-50 py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -135,7 +108,9 @@ export default function RecoveryRoutinePage() {
             <span>←</span>
             <span>홈으로 돌아가기</span>
           </button>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">회복 루틴 🎯</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            회복 루틴 🎯
+          </h1>
           <p className="text-lg text-gray-600">당신을 위한 맞춤형 일상 루틴</p>
         </div>
 
@@ -148,7 +123,9 @@ export default function RecoveryRoutinePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
               <div className="text-sm opacity-90 mb-1">평균 스트레스</div>
-              <div className="text-3xl font-bold">{weeklyAnalysis.averageStress}/5</div>
+              <div className="text-3xl font-bold">
+                {weeklyAnalysis.averageStress}/5
+              </div>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
               <div className="text-sm opacity-90 mb-1">피크 시간</div>
@@ -156,11 +133,15 @@ export default function RecoveryRoutinePage() {
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
               <div className="text-sm opacity-90 mb-1">주요 원인</div>
-              <div className="text-lg font-bold">{weeklyAnalysis.mainCause}</div>
+              <div className="text-lg font-bold">
+                {weeklyAnalysis.mainCause}
+              </div>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
               <div className="text-sm opacity-90 mb-1">체크인 완료율</div>
-              <div className="text-3xl font-bold">{weeklyAnalysis.checkInRate}%</div>
+              <div className="text-3xl font-bold">
+                {weeklyAnalysis.checkInRate}%
+              </div>
             </div>
           </div>
         </div>
@@ -172,9 +153,10 @@ export default function RecoveryRoutinePage() {
             <div>
               <h3 className="font-bold text-gray-900 mb-2">AI 추천</h3>
               <p className="text-gray-700 leading-relaxed">
-                지난주 데이터를 분석한 결과, <strong>오후 시간대</strong>에 스트레스가 높았어요.
-                이 시간대 전후로 루틴을 실천하면 효과적으로 스트레스를 관리할 수 있습니다.
-                특히 <strong>짧은 산책</strong>과 <strong>호흡 운동</strong>이 도움이 될 거예요!
+                지난주 데이터를 분석한 결과, <strong>오후 시간대</strong>에
+                스트레스가 높았어요. 이 시간대 전후로 루틴을 실천하면 효과적으로
+                스트레스를 관리할 수 있습니다. 특히 <strong>짧은 산책</strong>과{" "}
+                <strong>호흡 운동</strong>이 도움이 될 거예요!
               </p>
             </div>
           </div>
@@ -182,7 +164,9 @@ export default function RecoveryRoutinePage() {
 
         {/* 이번 주 루틴 목록 */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">이번 주 추천 루틴</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            이번 주 추천 루틴
+          </h2>
           <div className="space-y-4">
             {routines.map((routine) => (
               <RoutineCard
@@ -216,7 +200,11 @@ export default function RecoveryRoutinePage() {
             </div>
             <div className="bg-white rounded-xl p-4 text-center">
               <div className="text-3xl font-bold text-purple-600 mb-1">
-                {Math.round(routines.reduce((acc, r) => acc + r.completionRate, 0) / routines.length)}%
+                {Math.round(
+                  routines.reduce((acc, r) => acc + r.completionRate, 0) /
+                    routines.length
+                )}
+                %
               </div>
               <div className="text-sm text-gray-600">평균 완료율</div>
             </div>

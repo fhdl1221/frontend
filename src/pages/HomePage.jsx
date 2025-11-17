@@ -8,7 +8,7 @@ import StressAlertModal from "../components/StressAlertModal";
 export default function HomePage() {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
-  
+
   const [todayCheckIn, setTodayCheckIn] = useState(null);
   const [recommendedContents, setRecommendedContents] = useState([]);
   const [showStressAlert, setShowStressAlert] = useState(false);
@@ -92,7 +92,7 @@ export default function HomePage() {
         {/* 환영 헤더 */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            안녕하세요, {user?.username || "사용자"}님! 👋
+            안녕하세요, {user?.email || "사용자"}님! 👋
           </h1>
           <p className="text-gray-600 text-lg">
             오늘도 마음 건강을 챙기는 하루 되세요
@@ -118,23 +118,37 @@ export default function HomePage() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
               </div>
             ) : todayCheckIn ? (
-              <div className={`bg-gradient-to-br ${getStressColor(todayCheckIn.stressLevel)} rounded-xl p-6 text-white`}>
+              <div
+                className={`bg-gradient-to-br ${getStressColor(
+                  todayCheckIn.stressLevel
+                )} rounded-xl p-6 text-white`}
+              >
                 <div className="flex items-center gap-6">
-                  <div className="text-6xl">{getStressEmoji(todayCheckIn.stressLevel)}</div>
+                  <div className="text-6xl">
+                    {getStressEmoji(todayCheckIn.stressLevel)}
+                  </div>
                   <div className="flex-1">
-                    <div className="text-sm opacity-90 mb-1">현재 스트레스 레벨</div>
+                    <div className="text-sm opacity-90 mb-1">
+                      현재 스트레스 레벨
+                    </div>
                     <div className="text-3xl font-bold mb-2">
                       {getStressLevel(todayCheckIn.stressLevel)}
                     </div>
                     <div className="text-sm opacity-80">
-                      {new Date(todayCheckIn.createdAt).toLocaleTimeString('ko-KR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })} 체크인 완료
+                      {new Date(todayCheckIn.createdAt).toLocaleTimeString(
+                        "ko-KR",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}{" "}
+                      체크인 완료
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-5xl font-bold">{todayCheckIn.stressLevel}</div>
+                    <div className="text-5xl font-bold">
+                      {todayCheckIn.stressLevel}
+                    </div>
                     <div className="text-sm opacity-90">/5</div>
                   </div>
                 </div>
@@ -142,8 +156,12 @@ export default function HomePage() {
             ) : (
               <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-8 text-white text-center">
                 <div className="text-5xl mb-4">✨</div>
-                <h3 className="text-xl font-semibold mb-2">아직 체크인하지 않았어요</h3>
-                <p className="text-purple-100 mb-6">오늘의 컨디션을 기록해보세요</p>
+                <h3 className="text-xl font-semibold mb-2">
+                  아직 체크인하지 않았어요
+                </h3>
+                <p className="text-purple-100 mb-6">
+                  오늘의 컨디션을 기록해보세요
+                </p>
                 <button
                   onClick={() => navigate("/check-in")}
                   className="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-all"
@@ -207,7 +225,9 @@ export default function HomePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">추천 콘텐츠</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                추천 콘텐츠
+              </h2>
               <p className="text-gray-600">당신을 위한 맞춤 마음챙김 콘텐츠</p>
             </div>
             <button

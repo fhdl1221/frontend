@@ -6,7 +6,6 @@ import authReducer from './authSlice';
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth'], // auth만 persist
 };
 
 const persistedReducer = persistReducer(persistConfig, authReducer);
