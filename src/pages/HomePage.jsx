@@ -4,6 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import ContentCard from "../components/ContentCard";
 import StressAlertModal from "../components/StressAlertModal";
+import {
+  getTodayCheckIn,
+  getDashboardData,
+  getWeeklyAnalytics,
+} from "../utils/api";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -11,27 +16,36 @@ export default function HomePage() {
 
   const [todayCheckIn, setTodayCheckIn] = useState(null);
   const [recommendedContents, setRecommendedContents] = useState([]);
+  const [weeklySummary, setWeeklySummary] = useState(null);
   const [showStressAlert, setShowStressAlert] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  // ⬇️ [수정] 로딩 상태를 섹션별로 분리
+  const [loadingCheckIn, setLoadingCheckIn] = useState(true);
+  const [loadingContents, setLoadingContents] = useState(true);
+  const [loadingSummary, setLoadingSummary] = useState(true);
 
   useEffect(() => {
     fetchTodayCheckIn();
     fetchRecommendedContents();
+    fetchWeeklySummary();
   }, []);
 
   // Mock 데이터 - 실제로는 API 호출
   async function fetchTodayCheckIn() {
-    setLoading(true);
-    // TODO: GET /check-in/today API 호출
-    setTimeout(() => {
-      const mockData = {
-        stressLevel: 3,
-        emoji: "😐",
-        createdAt: new Date().toISOString(),
-      };
-      setTodayCheckIn(mockData);
-      setLoading(false);
-    }, 500);
+    setLoadingCheckIn(true);
+    try {
+      const response = await getTodayCheckIn();
+      if (response.data) {
+        setTodayCheckIn(response.data); // API 응답 데이터로 state 설정
+      } else {
+        setTodayCheckIn(null); // 체크인 안 함
+      }
+    } catch (error) {
+      console.error("오늘 체크인 정보 로드 실패:", error);
+      setTodayCheckIn(null);
+    } finally {
+      setLoadingCheckIn(false);
+    }
   }
 
   async function fetchRecommendedContents() {
@@ -68,6 +82,21 @@ export default function HomePage() {
       ];
       setRecommendedContents(mockContents);
     }, 300);
+  }
+
+  // ⬇️ [추가] GET /api/analytics/dashboard?period=7 API 호출
+  async function fetchWeeklySummary() {
+    setLoadingSummary(true);
+    try {
+      // 7일간의 대시보드 데이터 (StatisticsPage.jsx 참조)
+      const response = await getDashboardData(7);
+      setWeeklySummary(response.data);
+    } catch (error) {
+      console.error("주간 요약 로드 실패:", error);
+      setWeeklySummary(null);
+    } finally {
+      setLoadingSummary(false);
+    }
   }
 
   const getStressEmoji = (level) => {
@@ -109,11 +138,14 @@ export default function HomePage() {
                 onClick={() => navigate("/check-in")}
                 className="text-sm text-purple-600 hover:text-purple-700 font-medium"
               >
-                {todayCheckIn ? "수정하기" : "체크인하기"} →
+                {/* [수정] 로딩 중이 아닐 때만 버튼 텍스트 표시 */}
+                {!loadingCheckIn &&
+                  (todayCheckIn ? "수정하기" : "체크인하기")}{" "}
+                →
               </button>
             </div>
 
-            {loading ? (
+            {loadingCheckIn ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
               </div>
@@ -125,7 +157,8 @@ export default function HomePage() {
               >
                 <div className="flex items-center gap-6">
                   <div className="text-6xl">
-                    {getStressEmoji(todayCheckIn.stressLevel)}
+                    {/* [수정] API 응답의 이모지 직접 사용 */}
+                    {todayCheckIn.stressEmoji}
                   </div>
                   <div className="flex-1">
                     <div className="text-sm opacity-90 mb-1">
@@ -135,6 +168,7 @@ export default function HomePage() {
                       {getStressLevel(todayCheckIn.stressLevel)}
                     </div>
                     <div className="text-sm opacity-80">
+                      {/* [수정] DTO의 createdAt 필드 사용 */}
                       {new Date(todayCheckIn.createdAt).toLocaleTimeString(
                         "ko-KR",
                         {
@@ -258,31 +292,60 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-indigo-600 mb-1">6/7</div>
-              <div className="text-sm text-gray-600">체크인 완료</div>
+          {/* [수정] 주간 요약 API 연동 */}
+          {loadingSummary ? (
+            <div className="text-center text-gray-500 py-8">
+              주간 요약 데이터를 불러오는 중...
             </div>
-            <div className="bg-white rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-purple-600 mb-1">3.2</div>
-              <div className="text-sm text-gray-600">평균 스트레스</div>
-            </div>
-            <div className="bg-white rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-green-600 mb-1">8↓</div>
-              <div className="text-sm text-gray-600">지난주 대비</div>
-            </div>
-            <div className="bg-white rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-orange-600 mb-1">12</div>
-              <div className="text-sm text-gray-600">콘텐츠 시청</div>
-            </div>
-          </div>
+          ) : weeklySummary ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-xl p-4 text-center">
+                  <div className="text-3xl font-bold text-indigo-600 mb-1">
+                    {weeklySummary.checkInCount}/{weeklySummary.totalDays}
+                  </div>
+                  <div className="text-sm text-gray-600">체크인 완료</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 text-center">
+                  <div className="text-3xl font-bold text-purple-600 mb-1">
+                    {/* StatisticsPage.jsx처럼 숫자 포맷팅 */}
+                    {Number(weeklySummary.averageStress).toFixed(1)}
+                  </div>
+                  <div className="text-sm text-gray-600">평균 스트레스</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 text-center">
+                  <div
+                    className={`text-3xl font-bold mb-1 ${
+                      weeklySummary.comparisonPercentage < 0
+                        ? "text-green-600"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {Math.abs(weeklySummary.comparisonPercentage)}%
+                    {weeklySummary.comparisonPercentage < 0 ? "↓" : "↑"}
+                  </div>
+                  <div className="text-sm text-gray-600">지난주 대비</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 text-center">
+                  <div className="text-3xl font-bold text-orange-600 mb-1">
+                    {weeklySummary.contentViews.length}
+                  </div>
+                  <div className="text-sm text-gray-600">콘텐츠 시청</div>
+                </div>
+              </div>
 
-          <button
-            onClick={() => navigate("/statistics")}
-            className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
-          >
-            자세한 통계 보기
-          </button>
+              <button
+                onClick={() => navigate("/statistics")}
+                className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
+              >
+                자세한 통계 보기
+              </button>
+            </>
+          ) : (
+            <div className="text-center text-gray-500 py-8">
+              주간 요약 데이터를 불러올 수 없습니다.
+            </div>
+          )}
         </div>
       </div>
 
