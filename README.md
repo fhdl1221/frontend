@@ -37,6 +37,7 @@ src/
 ├── store/          # Redux 상태 관리 설정 (Auth, User)
 ├── utils/          # API 호출 함수 및 유틸리티 (api.js)
 └── App.jsx         # 메인 앱 컴포넌트
+```
 
 ---
 
@@ -47,6 +48,7 @@ src/
 ### 1. 설치
 ```bash
 npm install
+```
 
 ### 2. 환경 변수 설정 (src/utils/api.js)
 로컬 백엔드 서버와 연결하려면 baseURL을 변경해야 합니다.
@@ -55,7 +57,9 @@ npm install
 const apiClient = axios.create({
   baseURL: "http://localhost:8080/api", // 로컬 서버 주소
 });
+```
 
 ### 3. 실행
 ```bash
 npm run dev
+```
