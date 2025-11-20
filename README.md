@@ -1,15 +1,18 @@
-# 🧘 SoftDay - Frontend
+# 🍦 SoftDay - Frontend
 
 **소프트데이**는 신입 직장인이 안정적으로 정착할 수 있고 개인 케어를 넘어 조직적으로 스트레스를 관리할 수 있는 문화를 만들고자 **신입 직장인의 하루를 지켜주는 AI 스트레스 케어 서비스**입니다.
 
-## 🔗 배포 링크 (Demo)
-👉 **[서비스 바로가기 (Vercel)](https://softday.vercel.app)**
+---
+
+## 📦 배포 (Deployment)
+이 프로젝트는 Vercel을 통해 배포되었습니다.
+#### 👉 **[서비스 바로가기 (Vercel)](https://softday.vercel.app)**
 *(누구나 접속하여 바로 사용해보실 수 있습니다.)*
 
 ---
 
 ## ✨ 주요 기능 (Key Features)
-
+* **📝 온보딩:** 사용자 맞춤형 설문조사를 통해 초기 데이터를 수집합니다.
 * **😊 마음클릭(일일 체크인):** 이모지로 간편하게 오늘의 기분과 스트레스 원인을 기록합니다.
 * **🤖 위톡(AI 챗봇 서비스):** Google Gemini AI가 대화 맥락을 파악하여 위로와 조언을 건넵니다.
 * **📊 마음지수(스트레스 대시보드):** 주간/월간 통계를 통해 나의 스트레스 패턴을 시각화합니다.
@@ -26,6 +29,8 @@
 * **Routing:** React Router DOM
 * **HTTP Client:** Axios
 * **Deployment:** Vercel
+
+---
 
 ## 📂 Folder Structure
 
