@@ -37,6 +37,8 @@ export default function OnboardingNotification() {
       // 3. 백엔드가 토큰을 반환합니다. (AuthController 수정됨)
       const { accessToken } = response.data;
 
+      localStorage.setItem("accessToken", accessToken);
+
       // 4. 회원가입과 동시에 로그인 처리
       dispatch(
         setCredentials({ user: { email: userData.email }, token: accessToken })
