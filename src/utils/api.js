@@ -2,7 +2,7 @@ import axios from "axios";
 
 // 백엔드 API의 기본 URL
 const apiClient = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: "https://softday-backend.onrender.com/api",
 });
 
 // 요청 인터셉터: 모든 요청에 JWT 토큰을 포함시킵니다.
